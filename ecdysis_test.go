@@ -1,17 +1,32 @@
+// Copyright © 2024 Meroxa, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//go:generate mockgen -source=ecdysis_test.go -destination=behavioral_mock_test.go -package=ecdysis -typed
+
 package ecdysis
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
-	"reflect"
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/cobra"
+	"go.uber.org/mock/gomock"
 )
 
 type testCmd struct {
@@ -28,7 +43,9 @@ var (
 func (c *testCmd) Usage() string {
 	return "cmd1"
 }
-
+func (c *testCmd) Aliases() []string {
+	return []string{"foo", "bar"}
+}
 func (c *testCmd) Docs() Docs {
 	return Docs{
 		Short:   "short-foo",
@@ -36,20 +53,14 @@ func (c *testCmd) Docs() Docs {
 		Example: "example-baz",
 	}
 }
-
-func (c *testCmd) Aliases() []string {
-	return []string{"foo", "bar"}
-}
-
 func (c *testCmd) Flags() []Flag {
 	return []Flag{
 		{Long: "long-foo", Short: "l", Usage: "test flag", Required: false, Persistent: false, Ptr: &c.flagLongFoo},
 	}
 }
-
-func (c *testCmd) SubCommands() []*cobra.Command {
+func (c *testCmd) SubCommands(e *Ecdysis) []*cobra.Command {
 	return []*cobra.Command{
-		BuildCobraCommand(&subCmd{}),
+		e.MustBuildCobraCommand(&subCmd{}),
 	}
 }
 
@@ -60,6 +71,7 @@ func (c *subCmd) Usage() string {
 }
 
 func TestBuildCobraCommand_Structural(t *testing.T) {
+	ecdysis := New()
 	cmd := &testCmd{}
 
 	want := &cobra.Command{
@@ -72,7 +84,7 @@ func TestBuildCobraCommand_Structural(t *testing.T) {
 	want.Flags().StringVarP(&cmd.flagLongFoo, "long-foo", "l", "", "test flag")
 	want.AddCommand(&cobra.Command{Use: "subCmd"})
 
-	got := BuildCobraCommand(cmd)
+	got := ecdysis.MustBuildCobraCommand(cmd)
 
 	// Since we can't compare functions, we ignore RunE (coming from `buildCommandEvent`)
 	got.RunE = nil
@@ -85,122 +97,30 @@ func TestBuildCobraCommand_Structural(t *testing.T) {
 	}
 }
 
-var (
-	_ CommandWithArgs     = (*mockCommand)(nil)
-	_ CommandWithLogger   = (*mockCommand)(nil)
-	_ CommandWithExecute  = (*mockCommand)(nil)
-	_ CommandWithoutEvent = (*mockCommand)(nil)
-)
-
-// mockCommand is a mock of a behavioral command (5 interfaces).
-type mockCommand struct {
-	ctrl     *gomock.Controller
-	recorder *mockCommandMockRecorder
-}
-
-func (m *mockCommand) Event() bool {
-	return false
-}
-
-// mockCommandMockRecorder is the mock recorder for mockCommand.
-type mockCommandMockRecorder struct {
-	mock *mockCommand
-}
-
-// newMockCommand creates a new mock instance.
-func newMockCommand(ctrl *gomock.Controller) *mockCommand {
-	mock := &mockCommand{ctrl: ctrl}
-	mock.recorder = &mockCommandMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *mockCommand) EXPECT() *mockCommandMockRecorder {
-	return m.recorder
-}
-
-func (m *mockCommand) Usage() string {
-	return "mockCmd"
-}
-
-// ParseArgs mocks base method.
-func (m *mockCommand) ParseArgs(strings []string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseArgs", strings)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ParseArgs indicates an expected call of ParseArgs.
-func (mr *mockCommandMockRecorder) ParseArgs(strings interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseArgs", reflect.TypeOf((*mockCommand)(nil).ParseArgs), strings)
-}
-
-// Logger mocks base method.
-func (m *mockCommand) Logger(logger *slog.Logger) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Logger", logger)
-}
-
-// Logger indicates an expected call of Logger.
-func (mr *mockCommandMockRecorder) Logger(logger interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logger", reflect.TypeOf((*mockCommand)(nil).Logger), logger)
-}
-
-// Execute mocks base method.
-func (m *mockCommand) Execute(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Execute", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Execute indicates an expected call of Execute.
-func (mr *mockCommandMockRecorder) Execute(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*mockCommand)(nil).Execute), ctx)
+// BehavioralTestCommand is an interface out of which a mock will be generated.
+type BehavioralTestCommand interface {
+	CommandWithArgs
+	CommandWithLogger
+	CommandWithExecute
 }
 
 func TestBuildCobraCommand_Behavioral(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
-	cmd := newMockCommand(ctrl)
+	cmd := NewMockBehavioralTestCommand(ctrl)
 
-	// build without setting up mock, we expect no calls when building the cobra command
-	got := BuildCobraCommand(cmd)
+	wantLogger := slog.New(slog.NewTextHandler(nil, nil))
+	ecdysis := New(WithDecorators(CommandWithLoggerDecorator{Logger: wantLogger}))
 
-	// set up expectations before executing the command
-	var i int
-	cmd.EXPECT().
-		ParseArgs(gomock.Any()).
-		DoAndReturn(func([]string) error {
-			i++
-			if i != 1 {
-				t.Fatalf("unexpected function order")
-			}
-			return nil
-		})
+	// When building we only expect Usage and Logger to be called.
+	call := cmd.EXPECT().Usage().Return("mock").Call
+	call = cmd.EXPECT().Logger(wantLogger).After(call)
 
-	cmd.EXPECT().
-		Logger(gomock.Any()).
-		DoAndReturn(func(*slog.Logger) {
-			i++
-			if i != 2 {
-				t.Fatalf("unexpected function order")
-			}
-		})
+	got := ecdysis.MustBuildCobraCommand(cmd)
 
-	cmd.EXPECT().
-		Execute(ctx).
-		DoAndReturn(func(context.Context) error {
-			i++
-			if i != 3 {
-				t.Fatalf("unexpected function order")
-			}
-			return nil
-		})
+	// Set up the remaining expectations before executing the command.
+	call = cmd.EXPECT().Args(gomock.Any()).Return(nil).After(call)
+	cmd.EXPECT().Execute(ctx).Return(nil).After(call)
 
 	err := got.ExecuteContext(ctx)
 	if err != nil {
@@ -257,6 +177,7 @@ func (t *testCmdWithFlags) Flags() []Flag {
 }
 
 func TestBuildCommandWithFlags(t *testing.T) {
+	ecdysis := New()
 	cmd := &testCmdWithFlags{}
 
 	want := &cobra.Command{Use: "testCmdWithFlags"}
@@ -284,7 +205,7 @@ func TestBuildCommandWithFlags(t *testing.T) {
 		}
 	}
 
-	got := BuildCobraCommand(cmd)
+	got := ecdysis.MustBuildCobraCommand(cmd)
 
 	// Since we can't compare functions, we ignore RunE (coming from `buildCommandEvent`)
 	got.RunE = nil
