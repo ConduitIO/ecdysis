@@ -31,6 +31,20 @@ type Ecdysis struct {
 // Command is an interface that represents a command that can be decorated and
 // converted to a cobra.Command instance.
 type Command interface {
+	// Usage is the one-line usage message.
+	// Recommended syntax is as follows:
+	//   [ ] identifies an optional argument. Arguments that are not enclosed in
+	//       brackets are required.
+	//   ... indicates that you can specify multiple values for the previous
+	//       argument.
+	//   |   indicates mutually exclusive information. You can use the argument
+	//       to the left of the separator or the argument to the right of the
+	//       separator. You cannot use both arguments in a single use of the
+	//       command.
+	//   { } delimits a set of mutually exclusive arguments when one of the
+	//       arguments is required. If the arguments are optional, they are
+	//       enclosed in brackets ([ ]).
+	// Example: add [-F file | -D dir]... [-f format] profile
 	Usage() string
 }
 
