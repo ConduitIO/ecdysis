@@ -32,16 +32,40 @@ type Flag struct {
 	Required bool
 	// Persistent is used to propagate the flag to subcommands.
 	Persistent bool
-	// Default is the default value when the flag is not explicitly supplied. It should have the same type as the value
-	// behind the pointer in field Ptr.
-	Default interface{}
+	// Default is the default value when the flag is not explicitly supplied.
+	// It should have the same type as the value behind the pointer in field Ptr.
+	Default any
 	// Ptr is a pointer to the value into which the flag will be parsed.
-	Ptr interface{}
+	Ptr any
 	// Hidden is used to mark the flag as hidden.
 	Hidden bool
 }
 
-func BuildFlags(obj interface{}) []Flag {
+type Flags []Flag
+
+// GetFlag returns the flag with the given long name.
+func (f Flags) GetFlag(long string) (Flag, bool) {
+	for _, flag := range f {
+		if flag.Long == long {
+			return flag, true
+		}
+	}
+	return Flag{}, false
+}
+
+// SetDefault sets the default value for the flag with the given long name.
+func (f Flags) SetDefault(long string, val any) bool {
+	for i, flag := range f {
+		if flag.Long == long {
+			flag.Default = val
+			f[i] = flag
+			return true
+		}
+	}
+	return false
+}
+
+func BuildFlags(obj any) Flags {
 	v := reflect.ValueOf(obj)
 	if v.Kind() != reflect.Ptr {
 		panic(fmt.Errorf("expected a pointer, got %s", v.Kind()))

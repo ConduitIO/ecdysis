@@ -62,9 +62,9 @@ func (c *testCmd) Flags() []Flag {
 	}
 }
 
-func (c *testCmd) SubCommands(e *Ecdysis) []*cobra.Command {
-	return []*cobra.Command{
-		e.MustBuildCobraCommand(&subCmd{}),
+func (c *testCmd) SubCommands() []Command {
+	return []Command{
+		&subCmd{},
 	}
 }
 

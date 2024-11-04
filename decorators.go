@@ -308,7 +308,7 @@ func (CommandWithHiddenDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Com
 type CommandWithSubCommands interface {
 	Command
 	// SubCommands defines subcommands of a command.
-	SubCommands(*Ecdysis) []*cobra.Command
+	SubCommands() []Command
 }
 
 // CommandWithSubCommandsDecorator is a decorator that sets the command subcommands.
@@ -321,8 +321,12 @@ func (CommandWithSubCommandsDecorator) Decorate(e *Ecdysis, cmd *cobra.Command, 
 		return nil
 	}
 
-	for _, sub := range v.SubCommands(e) {
-		cmd.AddCommand(sub)
+	for _, sub := range v.SubCommands() {
+		subCmd, err := e.BuildCobraCommand(sub)
+		if err != nil {
+			return fmt.Errorf("failed to build subcommand %q: %w", sub.Usage(), err)
+		}
+		cmd.AddCommand(subCmd)
 	}
 	return nil
 }
