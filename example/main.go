@@ -18,7 +18,7 @@ func main() {
 }
 
 type RootFlags struct {
-	Config  string `long:"config" usage:"config file (default is $HOME/.cobra-cli.yaml)" persistent:"true"`
+	Config  string `long:"config" usage:"config file (default is $HOME/.example-cli.yaml)" persistent:"true"`
 	Author  string `long:"author" short:"a" usage:"author name for copyright attribution" persistent:"true"`
 	License string `long:"license" short:"l" usage:"name of license for the project" persistent:"true"`
 	Viper   bool   `long:"viper" usage:"use Viper for configuration" persistent:"true"`
@@ -43,7 +43,7 @@ func (c *RootCommand) Flags() []ecdysis.Flag {
 }
 func (c *RootCommand) Docs() ecdysis.Docs {
 	return ecdysis.Docs{
-		Short: "A generator for Cobra based Applications",
+		Short: "An example CLI for ecdysis based Applications",
 		Long: `Example CLI showcases the power of ecdysis.
 This application is an example made using ecdysis,
 a wrapper around Cobra that allows you to declare
@@ -83,7 +83,9 @@ var (
 
 func (c *VersionCommand) Usage() string { return "version" }
 func (c *VersionCommand) Docs() ecdysis.Docs {
-	return ecdysis.Docs{Short: "Print the version number of example-cli"}
+	return ecdysis.Docs{
+		Short: "Print the version number of example-cli",
+	}
 }
 func (c *VersionCommand) Execute(context.Context) error {
 	fmt.Println("example-cli v0.1.0")
