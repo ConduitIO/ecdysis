@@ -21,21 +21,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Ecdysis is the main struct that holds all decorators and is used to build
+// cobra.Command instances from Command instances.
 type Ecdysis struct {
+	// Decorators is a list of decorators that are applied to all commands.
 	Decorators []Decorator
 }
 
+// Command is an interface that represents a command that can be decorated and
+// converted to a cobra.Command instance.
 type Command interface {
 	Usage() string
 }
 
+// Decorator is an interface that can be used to decorate a cobra.Command
+// instance.
 type Decorator interface {
 	Decorate(e *Ecdysis, cmd *cobra.Command, c Command) error
 }
 
 // New creates a new Ecdysis instance with the provided options. By default, it
-// uses the DefaultDecorators. The options can be used to add or replace
-// decorators.
+// uses the DefaultDecorators. Options can be used to add or replace decorators.
 func New(opts ...Option) *Ecdysis {
 	e := &Ecdysis{
 		Decorators: make([]Decorator, len(DefaultDecorators)),

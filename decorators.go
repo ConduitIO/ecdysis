@@ -48,17 +48,21 @@ var DefaultDecorators = []Decorator{
 
 // -- LOGGER -------------------------------------------------------------------
 
+// CommandWithLogger can be implemented by a command to get a logger.
 type CommandWithLogger interface {
 	Command
 	// Logger provides the logger to the command.
 	Logger(*slog.Logger)
 }
 
+// CommandWithLoggerDecorator is a decorator that provides a logger to the command.
+// If the Logger field is not set, the default slog logger will be provided.
 type CommandWithLoggerDecorator struct {
 	Logger *slog.Logger
 }
 
-func (d CommandWithLoggerDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
+// Decorate provides the logger to the command.
+func (d CommandWithLoggerDecorator) Decorate(_ *Ecdysis, _ *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithLogger)
 	if !ok {
 		return nil
@@ -75,16 +79,18 @@ func (d CommandWithLoggerDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c C
 
 // -- ALIASES ------------------------------------------------------------------
 
-// CommandWithAliases is an interface that can be implemented by a command to
-// provide aliases.
+// CommandWithAliases can be implemented by a command to provide aliases.
 type CommandWithAliases interface {
 	Command
-	// Aliases is an array of aliases that can be used instead of the first word in Usage.
+	// Aliases is a slice of aliases that can be used instead of the first word
+	// in Usage.
 	Aliases() []string
 }
 
+// CommandWithAliasesDecorator is a decorator that sets the command aliases.
 type CommandWithAliasesDecorator struct{}
 
+// Decorate sets the command aliases.
 func (CommandWithAliasesDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithAliases)
 	if !ok {
@@ -97,14 +103,18 @@ func (CommandWithAliasesDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Co
 
 // -- FLAGS --------------------------------------------------------------------
 
+// CommandWithFlags can be implemented by a command to provide flags.
 type CommandWithFlags interface {
 	Command
 	// Flags returns the set of flags on this command.
 	Flags() []Flag
 }
 
+// CommandWithFlagsDecorator is a decorator that sets the command flags.
 type CommandWithFlagsDecorator struct{}
 
+// Decorate sets the command flags.
+//
 //nolint:funlen,gocyclo // this function has a big switch statement, can't get around that
 func (CommandWithFlagsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithFlags)
@@ -234,6 +244,7 @@ func (CommandWithFlagsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Comm
 
 // -- DOCS ---------------------------------------------------------------------
 
+// CommandWithDocs can be implemented by a command to provide documentation.
 type CommandWithDocs interface {
 	Command
 	// Docs returns the documentation for the command.
@@ -250,8 +261,10 @@ type Docs struct {
 	Example string
 }
 
+// CommandWithDocsDecorator is a decorator that sets the command documentation.
 type CommandWithDocsDecorator struct{}
 
+// Decorate sets the command documentation.
 func (CommandWithDocsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithDocs)
 	if !ok {
@@ -268,14 +281,17 @@ func (CommandWithDocsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Comma
 
 // -- HIDDEN -------------------------------------------------------------------
 
+// CommandWithHidden can be implemented by a command to hide it from the help.
 type CommandWithHidden interface {
 	Command
 	// Hidden returns the desired hidden value for the command.
 	Hidden() bool
 }
 
+// CommandWithHiddenDecorator is a decorator that sets the command hidden value.
 type CommandWithHiddenDecorator struct{}
 
+// Decorate sets the command hidden value.
 func (CommandWithHiddenDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithHidden)
 	if !ok {
@@ -288,14 +304,17 @@ func (CommandWithHiddenDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Com
 
 // -- SUB COMMANDS -------------------------------------------------------------
 
+// CommandWithSubCommands can be implemented by a command to provide subcommands.
 type CommandWithSubCommands interface {
 	Command
 	// SubCommands defines subcommands of a command.
 	SubCommands(*Ecdysis) []*cobra.Command
 }
 
+// CommandWithSubCommandsDecorator is a decorator that sets the command subcommands.
 type CommandWithSubCommandsDecorator struct{}
 
+// Decorate sets the command subcommands.
 func (CommandWithSubCommandsDecorator) Decorate(e *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithSubCommands)
 	if !ok {
@@ -310,13 +329,18 @@ func (CommandWithSubCommandsDecorator) Decorate(e *Ecdysis, cmd *cobra.Command, 
 
 // -- DEPRECATED ---------------------------------------------------------------
 
+// CommandWithDeprecated can be implemented by a command to mark it as deprecated
+// and print a message when it is used.
 type CommandWithDeprecated interface {
 	Command
+	// Deprecated returns a message that will be printed when the command is used.
 	Deprecated() string
 }
 
+// CommandWithDeprecatedDecorator is a decorator that deprecates the command.
 type CommandWithDeprecatedDecorator struct{}
 
+// Decorate deprecates the command.
 func (CommandWithDeprecatedDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithDeprecated)
 	if !ok {
@@ -352,14 +376,17 @@ func (CommandWithDeprecatedDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c
 
 // -- ARGS ---------------------------------------------------------------------
 
+// CommandWithArgs can be implemented by a command to parse arguments.
 type CommandWithArgs interface {
 	Command
 	// Args is meant to parse arguments after the command name.
 	Args([]string) error
 }
 
+// CommandWithArgsDecorator is a decorator that provides the command arguments.
 type CommandWithArgsDecorator struct{}
 
+// Decorate provides the command arguments.
 func (CommandWithArgsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithArgs)
 	if !ok {
@@ -381,17 +408,24 @@ func (CommandWithArgsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Comma
 
 // -- CONFIRM ------------------------------------------------------------------
 
+// CommandWithConfirm can be implemented by a command to require confirmation
+// before execution. The user will be prompted to enter a specific value.
+// If the value matches, the command will be executed, otherwise it will be
+// aborted.
 type CommandWithConfirm interface {
 	Command
 	// ValueToConfirm adds a prompt before the command is executed where the
 	// user is asked to write the exact value as wantInput. If the user input
 	// matches the command will be executed, otherwise processing will be
-	// stopped.
-	ValueToConfirm(ctx context.Context) (wantInput string)
+	// aborted.
+	ValueToConfirm(context.Context) (wantInput string)
 }
 
+// CommandWithConfirmDecorator is a decorator that sets up a confirmation prompt
+// before executing the command.
 type CommandWithConfirmDecorator struct{}
 
+// Decorate sets up a confirmation prompt before executing the command.
 func (CommandWithConfirmDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithConfirm)
 	if !ok {
@@ -444,21 +478,25 @@ func (CommandWithConfirmDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Co
 
 // -- PROMPT -------------------------------------------------------------------
 
+// CommandWithPrompt can be implemented by a command to require confirmation
+// before execution. The user will be prompted to answer Y/N to proceed.
 type CommandWithPrompt interface {
 	Command
 
 	// Prompt adds a prompt before the command is executed where the user is
-	// asked to answer Y/N to proceed.
-	Prompt() error
+	// asked to answer Y/N to proceed. It returns the message to be printed and
+	// a boolean indicating if the prompt was successfully processed.
+	Prompt() (message string, ok bool)
 	// SkipPrompt will return logic around when to skip prompt (e.g.: when all
 	// flags and arguments are specified).
 	SkipPrompt() bool
-	// NotConfirmed indicates what to show in case user declines the answer.
-	NotConfirmed() (prompt string)
 }
 
+// CommandWithPromptDecorator is a decorator that sets up a confirmation prompt
+// before executing the command.
 type CommandWithPromptDecorator struct{}
 
+// Decorate sets up a confirmation prompt before executing the command.
 func (CommandWithPromptDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithPrompt)
 	if !ok {
@@ -490,10 +528,10 @@ func (CommandWithPromptDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Com
 			return nil
 		}
 
-		e := v.Prompt()
+		msg, ok := v.Prompt()
 
-		if e != nil {
-			fmt.Println(v.NotConfirmed())
+		if !ok {
+			fmt.Println(msg)
 			os.Exit(1)
 		}
 
@@ -505,14 +543,18 @@ func (CommandWithPromptDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Com
 
 // -- EXECUTE ------------------------------------------------------------------
 
+// CommandWithExecute can be implemented by a command to provide an execution
+// function.
 type CommandWithExecute interface {
 	Command
 	// Execute is the actual work function. Most commands will implement this.
 	Execute(ctx context.Context) error
 }
 
+// CommandWithExecuteDecorator is a decorator that sets the command execution.
 type CommandWithExecuteDecorator struct{}
 
+// Decorate sets the command execution.
 func (CommandWithExecuteDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithExecute)
 	if !ok {
