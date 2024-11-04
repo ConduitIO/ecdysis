@@ -15,9 +15,10 @@
 package ecdysis
 
 import (
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 type testFlags struct {
@@ -43,7 +44,7 @@ type testFlags struct {
 func TestBuildFlags(t *testing.T) {
 	flags := testFlags{}
 
-	want := []Flag{
+	want := Flags{
 		{Long: "flag1", Short: "a", Usage: "flag1 usage", Required: true, Persistent: false, Ptr: &flags.Flag1},
 		{Long: "flag2", Short: "b", Usage: "flag2 usage", Required: false, Persistent: true, Ptr: &flags.Flag2},
 		{Long: "flag3", Short: "c", Usage: "flag3 usage", Required: true, Persistent: false, Ptr: &flags.Flag3},
@@ -64,7 +65,7 @@ func TestBuildFlags(t *testing.T) {
 	}
 
 	got := BuildFlags(&flags)
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf(`expected "%v", got "%v"`, want, got)
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Fatal(diff)
 	}
 }
