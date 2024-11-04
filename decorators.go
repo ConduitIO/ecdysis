@@ -115,7 +115,7 @@ type CommandWithFlagsDecorator struct{}
 
 // Decorate sets the command flags.
 //
-//nolint:funlen,gocyclo // this function has a big switch statement, can't get around that
+//nolint:funlen,gocyclo,gocognit,forcetypeassert // this function has a big switch statement, can't get around that
 func (CommandWithFlagsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithFlags)
 	if !ok {
@@ -463,7 +463,7 @@ func (CommandWithConfirmDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Co
 		fmt.Printf("To proceed, type %q or re-run this command with --force\n▸ ", wantInput)
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read user input: %w", err)
 		}
 
 		if wantInput != strings.TrimRight(input, "\r\n") {

@@ -1,0 +1,33 @@
+name: validate-generated-files
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  validate-generated-files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      # This step sets up the variable steps.mockgen-version.outputs.v
+      # to contain the version of mockgen (e.g. v0.5.0).
+      # The version is taken from go.mod.
+      - name: Mockgen version
+        id: mockgen-version
+        run: |
+          MOCKGEN_VERSION=$( go list -m -f '{{.Version}}' go.uber.org/mock )
+          echo "v=$MOCKGEN_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check generated files
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go install go.uber.org/mock/mockgen@${{ steps.mockgen-version.outputs.v }}
+          go generate ./...
+          git diff --exit-code --numstat

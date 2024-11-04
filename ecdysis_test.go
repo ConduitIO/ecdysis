@@ -43,9 +43,11 @@ var (
 func (c *testCmd) Usage() string {
 	return "cmd1"
 }
+
 func (c *testCmd) Aliases() []string {
 	return []string{"foo", "bar"}
 }
+
 func (c *testCmd) Docs() Docs {
 	return Docs{
 		Short:   "short-foo",
@@ -53,11 +55,13 @@ func (c *testCmd) Docs() Docs {
 		Example: "example-baz",
 	}
 }
+
 func (c *testCmd) Flags() []Flag {
 	return []Flag{
 		{Long: "long-foo", Short: "l", Usage: "test flag", Required: false, Persistent: false, Ptr: &c.flagLongFoo},
 	}
 }
+
 func (c *testCmd) SubCommands(e *Ecdysis) []*cobra.Command {
 	return []*cobra.Command{
 		e.MustBuildCobraCommand(&subCmd{}),
@@ -93,7 +97,7 @@ func TestBuildCobraCommand_Structural(t *testing.T) {
 	got.PostRunE = nil
 
 	if v := cmp.Diff(got, want, cmpopts.IgnoreUnexported(cobra.Command{})); v != "" {
-		t.Fatalf(v)
+		t.Fatal(v)
 	}
 }
 
@@ -214,6 +218,6 @@ func TestBuildCommandWithFlags(t *testing.T) {
 	got.PostRunE = nil
 
 	if v := cmp.Diff(got, want, cmpopts.IgnoreUnexported(cobra.Command{})); v != "" {
-		t.Fatalf(v)
+		t.Fatal(v)
 	}
 }
