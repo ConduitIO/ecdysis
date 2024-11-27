@@ -66,7 +66,7 @@ func (f Flags) SetDefault(long string, val any) bool {
 }
 
 // BuildFlags creates a slice of Flags from a struct.
-// It supports nested structs and will only generate flags if it finds a 'short' and 'long' tag.
+// It supports nested structs and will only generate flags if it finds a 'short' or 'long' tag.
 func BuildFlags(obj any) Flags {
 	v := reflect.ValueOf(obj)
 	if v.Kind() != reflect.Ptr {
