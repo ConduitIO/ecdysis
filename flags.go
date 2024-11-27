@@ -89,7 +89,7 @@ func buildFlagsRecursive(v reflect.Value) Flags {
 		fieldValue := v.Field(i)
 
 		// Only process fields with a 'short' or 'long' tag
-		if hasTag(field.Tag, "short"); hasTag(field.Tag, "long") {
+		if hasTag(field.Tag, "short") || hasTag(field.Tag, "long") {
 			flag, err := buildFlag(fieldValue, field)
 			if err != nil {
 				panic(err)
