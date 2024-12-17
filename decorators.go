@@ -21,17 +21,23 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 var DefaultDecorators = []Decorator{
 	CommandWithLoggerDecorator{},
 	CommandWithAliasesDecorator{},
 	CommandWithFlagsDecorator{},
+
+	// Parsing Config need to be after Flags to make sure the flags are parsed.
+	CommandWithParsingConfigDecorator{},
+
 	CommandWithDocsDecorator{},
 	CommandWithHiddenDecorator{},
 	CommandWithSubCommandsDecorator{},
@@ -239,6 +245,72 @@ func (CommandWithFlagsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Comm
 		}
 	}
 
+	return nil
+}
+
+// -- PARSING CONFIGURATION --------------------------------------------------------------------
+
+// CommandWithParsingConfig can be implemented by a command to parsing configuration.
+type CommandWithParsingConfig interface {
+	Command
+
+	Config() UserConfig
+}
+
+// CommandWithParsingConfigDecorator is a decorator that sets the command flags.
+type CommandWithParsingConfigDecorator struct{}
+
+// Decorate parses the configuration based on flags.
+func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
+	v, ok := c.(CommandWithParsingConfig)
+	if !ok {
+		return nil
+	}
+
+	old := cmd.PreRunE
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if old != nil {
+			err := old(cmd, args)
+			if err != nil {
+				return err
+			}
+		}
+
+		usrCfg := v.Config()
+
+		// Ensure ParsedConfig is a pointer
+		if reflect.ValueOf(usrCfg.ParsedConfig).Kind() != reflect.Ptr {
+			return fmt.Errorf("ParsedConfig must be a pointer")
+		}
+
+		viper := viper.New()
+
+		// set default values
+		setDefaults(viper, usrCfg.DefaultConfig, "")
+
+		// Set environment variable handling
+		viper.SetEnvPrefix(usrCfg.Prefix)
+		viper.AutomaticEnv()
+		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+		// Load configuration file
+		viper.SetConfigFile(usrCfg.ConfigPath)
+		if err := viper.ReadInConfig(); err != nil {
+			return fmt.Errorf("fatal error config file: %w", err)
+		}
+
+		// Bind flags to Viper
+		cmd.Flags().VisitAll(func(f *pflag.Flag) {
+			if err := viper.BindPFlag(f.Name, f); err != nil {
+				fmt.Printf("error binding flag: %v\n", err)
+			}
+		})
+		// Unmarshal the configuration into the ParsedConfig
+		if err := viper.Unmarshal(usrCfg.ParsedConfig); err != nil {
+			return fmt.Errorf("error unmarshalling config: %w", err)
+		}
+		return nil
+	}
 	return nil
 }
 
