@@ -58,7 +58,7 @@ func setDefaults(v *viper.Viper, defaults interface{}) {
 			continue
 		}
 
-		switch field.Kind() {
+		switch field.Kind() { //nolint:exhaustive // no need to handle all cases
 		case reflect.Struct:
 			// Recursively handle nested structs
 			setDefaults(v, field.Interface())
