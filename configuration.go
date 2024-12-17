@@ -27,7 +27,7 @@ type UserConfig struct {
 	ConfigPath    string
 }
 
-func setDefaults(v *viper.Viper, defaults interface{}, fieldName string) {
+func setDefaults(v *viper.Viper, defaults interface{}) {
 	val := reflect.ValueOf(defaults)
 	typ := reflect.TypeOf(defaults)
 
@@ -61,11 +61,11 @@ func setDefaults(v *viper.Viper, defaults interface{}, fieldName string) {
 		switch field.Kind() {
 		case reflect.Struct:
 			// Recursively handle nested structs
-			setDefaults(v, field.Interface(), fieldName)
+			setDefaults(v, field.Interface())
 		case reflect.Ptr:
 			// Handle pointer fields
 			if !field.IsNil() {
-				setDefaults(v, field.Interface(), fieldName)
+				setDefaults(v, field.Interface())
 			}
 		default:
 			// Set the default value

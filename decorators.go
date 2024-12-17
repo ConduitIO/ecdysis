@@ -286,7 +286,7 @@ func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command
 		viper := viper.New()
 
 		// set default values
-		setDefaults(viper, usrCfg.DefaultConfig, "")
+		setDefaults(viper, usrCfg.DefaultConfig)
 
 		// Set environment variable handling
 		viper.SetEnvPrefix(usrCfg.Prefix)
