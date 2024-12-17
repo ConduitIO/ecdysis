@@ -20,11 +20,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-type UserConfig struct {
-	Prefix        string
-	ParsedConfig  any
-	DefaultConfig any
-	ConfigPath    string
+type Config struct {
+	EnvPrefix  string
+	ParsedCfg  any
+	DefaultCfg any
+	ConfigPath string
 }
 
 func setDefaults(v *viper.Viper, defaults interface{}) {

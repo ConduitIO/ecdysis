@@ -35,7 +35,7 @@ var DefaultDecorators = []Decorator{
 	CommandWithAliasesDecorator{},
 	CommandWithFlagsDecorator{},
 
-	// Parsing Config need to be after Flags to make sure the flags are parsed.
+	// CommandWithParsingConfigDecorator need to be after CommandWithFlagsDecorator to make sure the flags are parsed.
 	CommandWithParsingConfigDecorator{},
 
 	CommandWithDocsDecorator{},
@@ -250,11 +250,11 @@ func (CommandWithFlagsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Comm
 
 // -- PARSING CONFIGURATION --------------------------------------------------------------------
 
-// CommandWithParsingConfig can be implemented by a command to parsing configuration.
-type CommandWithParsingConfig interface {
+// CommandWithConfiguration can be implemented by a command to parsing configuration.
+type CommandWithConfiguration interface {
 	Command
 
-	Config() UserConfig
+	ParseConfig() Config
 }
 
 // CommandWithParsingConfigDecorator is a decorator that sets the command flags.
@@ -262,7 +262,7 @@ type CommandWithParsingConfigDecorator struct{}
 
 // Decorate parses the configuration based on flags.
 func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
-	v, ok := c.(CommandWithParsingConfig)
+	v, ok := c.(CommandWithConfiguration)
 	if !ok {
 		return nil
 	}
@@ -276,20 +276,20 @@ func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command
 			}
 		}
 
-		usrCfg := v.Config()
+		usrCfg := v.ParseConfig()
 
-		// Ensure ParsedConfig is a pointer
-		if reflect.ValueOf(usrCfg.ParsedConfig).Kind() != reflect.Ptr {
-			return fmt.Errorf("ParsedConfig must be a pointer")
+		// Ensure ParsedCfg is a pointer
+		if reflect.ValueOf(usrCfg.ParsedCfg).Kind() != reflect.Ptr {
+			return fmt.Errorf("ParsedCfg must be a pointer")
 		}
 
 		viper := viper.New()
 
 		// set default values
-		setDefaults(viper, usrCfg.DefaultConfig)
+		setDefaults(viper, usrCfg.DefaultCfg)
 
 		// Set environment variable handling
-		viper.SetEnvPrefix(usrCfg.Prefix)
+		viper.SetEnvPrefix(usrCfg.EnvPrefix)
 		viper.AutomaticEnv()
 		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
@@ -305,8 +305,8 @@ func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command
 				fmt.Printf("error binding flag: %v\n", err)
 			}
 		})
-		// Unmarshal the configuration into the ParsedConfig
-		if err := viper.Unmarshal(usrCfg.ParsedConfig); err != nil {
+		// Unmarshal the configuration into the ParsedCfg
+		if err := viper.Unmarshal(usrCfg.ParsedCfg); err != nil {
 			return fmt.Errorf("error unmarshalling config: %w", err)
 		}
 		return nil
