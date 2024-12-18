@@ -103,6 +103,72 @@ func main() {
 }
 ```
 
+### Configuration
+
+Ecdysis provides an automatic way to parse a configuration file, environment variables, and flags using the [`viper`](https://github.com/spf13/viper) library. To use it, you need to implement the `CommandWithConfig` interface.
+
+The order of precedence for configuration values is:
+
+1. Default values (slices and maps are not currently supported)
+2. Configuration file
+3. Environment variables
+4. Flags
+
+
+> [!IMPORTANT]  
+> For flags, it's important to set default values to ensure that the configuration will be correctly parsed. 
+> Otherwise, they will be empty, and it will be considered as if the user set that intentionally.
+> example: `flags.SetDefault("config.path", c.cfg.ConduitCfgPath)`
+
+```go
+var (
+    _ ecdysis.CommandWithConfiguration = (*RootCommand)(nil)
+)
+
+type ConduitConfig struct {
+    ConduitCfgPath string `long:"config.path" usage:"global conduit configuration file" default:"./conduit.yaml"`
+    
+    Connectors struct {
+        Path string `long:"connectors.path" usage:"path to standalone connectors' directory"`
+    }
+    
+    // ...
+}
+
+type RootFlags struct {
+    ConduitConfig // you can embed any configuration, and it'll use the proper tags
+}
+
+type RootCommand struct {
+    flags RootFlags
+    cfg   ConduitConfig
+}
+
+func (c *RootCommand) ParseConfig() ecdysis.Config {
+    return ecdysis.Config{
+        EnvPrefix:  "CONDUIT", // prefix for environment variables
+        ParsedCfg:  &c.cfg, // where configuration will be parsed
+        ConfigPath: c.flags.ConduitCfgPath, // where to read the configuration file
+        DefaultCfg: c.cfg, // where to extract default values from
+    }
+}
+
+func (c *RootCommand) Execute(_ context.Context) error {
+    // c.cfg is now populated with the right parsed configuration
+    return nil
+}
+
+func (c *RootCommand) Flags() []ecdysis.Flag {
+    flags := ecdysis.BuildFlags(&c.flags)
+    
+    // set a default value for each flag
+    flags.SetDefault("config.path", c.cfg.ConduitCfgPath) 
+    // ...
+	
+    return flags
+}
+````
+
 ## Flags
 
 Ecdysis provides a way to define flags using field tags. Flags will be

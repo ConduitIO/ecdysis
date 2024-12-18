@@ -21,17 +21,23 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 var DefaultDecorators = []Decorator{
 	CommandWithLoggerDecorator{},
 	CommandWithAliasesDecorator{},
 	CommandWithFlagsDecorator{},
+
+	// CommandWithConfigDecorator needs to be after CommandWithFlagsDecorator to make sure the flags are parsed.
+	CommandWithConfigDecorator{},
+
 	CommandWithDocsDecorator{},
 	CommandWithHiddenDecorator{},
 	CommandWithSubCommandsDecorator{},
@@ -239,6 +245,62 @@ func (CommandWithFlagsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Comm
 		}
 	}
 
+	return nil
+}
+
+// -- PARSING CONFIGURATION --------------------------------------------------------------------
+
+// CommandWithConfig can be implemented by a command to parsing configuration.
+type CommandWithConfig interface {
+	Command
+
+	Config() Config
+}
+
+// CommandWithConfigDecorator is a decorator that sets the command flags.
+type CommandWithConfigDecorator struct{}
+
+// Decorate parses the configuration based on flags.
+func (CommandWithConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
+	v, ok := c.(CommandWithConfig)
+	if !ok {
+		return nil
+	}
+
+	old := cmd.PreRunE
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if old != nil {
+			err := old(cmd, args)
+			if err != nil {
+				return err
+			}
+		}
+
+		cfg := v.Config()
+
+		// Ensure Parsed is a pointer
+		if reflect.ValueOf(cfg.Parsed).Kind() != reflect.Ptr {
+			return fmt.Errorf("parsed must be a pointer")
+		}
+
+		// Ensure both cfg.Parsed and cfg.DefaultValues are the same type
+		if reflect.TypeOf(cfg.Parsed) != reflect.TypeOf(cfg.DefaultValues) {
+			return fmt.Errorf("parsed and DefaultValues must be the same type")
+		}
+
+		viper := viper.New()
+
+		setDefaults(viper, cfg.DefaultValues)
+
+		if err := parseConfig(viper, cfg, cmd); err != nil {
+			return fmt.Errorf("error parsing config: %w", err)
+		}
+
+		if err := viper.Unmarshal(cfg.Parsed); err != nil {
+			return fmt.Errorf("error unmarshalling config: %w", err)
+		}
+		return nil
+	}
 	return nil
 }
 
