@@ -15,16 +15,20 @@
 package ecdysis
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	EnvPrefix  string
-	ParsedCfg  any
-	DefaultCfg any
-	ConfigPath string
+	EnvPrefix     string
+	Parsed        any
+	DefaultValues any
+	Path          string
 }
 
 // setDefaults sets the default values for the configuration. slices and maps are not supported.
@@ -70,4 +74,36 @@ func setDefaults(v *viper.Viper, defaults interface{}) {
 			}
 		}
 	}
+}
+
+// parseConfig parses the configuration (from cfg and cmd) into the viper instance.
+func parseConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
+	// Handle env variables
+	v.SetEnvPrefix(cfg.EnvPrefix)
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// Handle config file
+	v.SetConfigFile(cfg.Path)
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("fatal error config file: %w", err)
+	}
+
+	var errors []error
+
+	// Handle flags
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if err := v.BindPFlag(f.Name, f); err != nil {
+			errors = append(errors, err)
+		}
+	})
+
+	if len(errors) > 0 {
+		var errStrs []string
+		for _, err := range errors {
+			errStrs = append(errStrs, err.Error())
+		}
+		return fmt.Errorf("error binding flags: %s", strings.Join(errStrs, "; "))
+	}
+	return nil
 }

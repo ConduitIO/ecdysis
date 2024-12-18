@@ -35,8 +35,8 @@ var DefaultDecorators = []Decorator{
 	CommandWithAliasesDecorator{},
 	CommandWithFlagsDecorator{},
 
-	// CommandWithParsingConfigDecorator needs to be after CommandWithFlagsDecorator to make sure the flags are parsed.
-	CommandWithParsingConfigDecorator{},
+	// CommandWithConfigDecorator needs to be after CommandWithFlagsDecorator to make sure the flags are parsed.
+	CommandWithConfigDecorator{},
 
 	CommandWithDocsDecorator{},
 	CommandWithHiddenDecorator{},
@@ -250,19 +250,19 @@ func (CommandWithFlagsDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Comm
 
 // -- PARSING CONFIGURATION --------------------------------------------------------------------
 
-// CommandWithConfiguration can be implemented by a command to parsing configuration.
-type CommandWithConfiguration interface {
+// CommandWithConfig can be implemented by a command to parsing configuration.
+type CommandWithConfig interface {
 	Command
 
-	ParseConfig() Config
+	Config() Config
 }
 
-// CommandWithParsingConfigDecorator is a decorator that sets the command flags.
-type CommandWithParsingConfigDecorator struct{}
+// CommandWithConfigDecorator is a decorator that sets the command flags.
+type CommandWithConfigDecorator struct{}
 
 // Decorate parses the configuration based on flags.
-func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
-	v, ok := c.(CommandWithConfiguration)
+func (CommandWithConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
+	v, ok := c.(CommandWithConfig)
 	if !ok {
 		return nil
 	}
@@ -276,52 +276,27 @@ func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command
 			}
 		}
 
-		usrCfg := v.ParseConfig()
+		cfg := v.Config()
 
-		// Ensure ParsedCfg is a pointer
-		if reflect.ValueOf(usrCfg.ParsedCfg).Kind() != reflect.Ptr {
-			return fmt.Errorf("ParsedCfg must be a pointer")
+		// Ensure Parsed is a pointer
+		if reflect.ValueOf(cfg.Parsed).Kind() != reflect.Ptr {
+			return fmt.Errorf("parsed must be a pointer")
 		}
 
-		// Ensure both usrCfg.ParsedCfg and usrCfg.DefaultCfg are the same type
-		if reflect.TypeOf(usrCfg.ParsedCfg) != reflect.TypeOf(usrCfg.DefaultCfg) {
-			return fmt.Errorf("ParsedCfg and DefaultCfg must be the same type")
+		// Ensure both cfg.Parsed and cfg.DefaultValues are the same type
+		if reflect.TypeOf(cfg.Parsed) != reflect.TypeOf(cfg.DefaultValues) {
+			return fmt.Errorf("parsed and DefaultValues must be the same type")
 		}
 
 		viper := viper.New()
 
-		// Set default values
-		setDefaults(viper, usrCfg.DefaultCfg)
+		setDefaults(viper, cfg.DefaultValues)
 
-		// Handle env variables
-		viper.SetEnvPrefix(usrCfg.EnvPrefix)
-		viper.AutomaticEnv()
-		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-		// Handle config file
-		viper.SetConfigFile(usrCfg.ConfigPath)
-		if err := viper.ReadInConfig(); err != nil {
-			return fmt.Errorf("fatal error config file: %w", err)
+		if err := parseConfig(viper, cfg, cmd); err != nil {
+			return fmt.Errorf("error parsing config: %w", err)
 		}
 
-		var errors []error
-
-		// Handle flags
-		cmd.Flags().VisitAll(func(f *pflag.Flag) {
-			if err := viper.BindPFlag(f.Name, f); err != nil {
-				errors = append(errors, err)
-			}
-		})
-
-		if len(errors) > 0 {
-			var errStrs []string
-			for _, err := range errors {
-				errStrs = append(errStrs, err.Error())
-			}
-			return fmt.Errorf("error binding flags: %s", strings.Join(errStrs, "; "))
-		}
-
-		if err := viper.Unmarshal(usrCfg.ParsedCfg); err != nil {
+		if err := viper.Unmarshal(cfg.Parsed); err != nil {
 			return fmt.Errorf("error unmarshalling config: %w", err)
 		}
 		return nil
