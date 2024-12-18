@@ -312,8 +312,13 @@ func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command
 				errors = append(errors, err)
 			}
 		})
+
 		if len(errors) > 0 {
-			return fmt.Errorf("error binding flags: %w", errors)
+			var errStrs []string
+			for _, err := range errors {
+				errStrs = append(errStrs, err.Error())
+			}
+			return fmt.Errorf("error binding flags: %s", strings.Join(errStrs, "; "))
 		}
 
 		if err := viper.Unmarshal(usrCfg.ParsedCfg); err != nil {
