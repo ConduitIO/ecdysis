@@ -5,6 +5,9 @@ on:
     tags:
       - v*
 
+builds:
+  - skip: true # this is for libraries
+
 permissions:
   contents: write
 
