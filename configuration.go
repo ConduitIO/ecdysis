@@ -27,6 +27,7 @@ type Config struct {
 	ConfigPath string
 }
 
+// setDefaults sets the default values for the configuration. slices and maps are not supported.
 func setDefaults(v *viper.Viper, defaults interface{}) {
 	val := reflect.ValueOf(defaults)
 	typ := reflect.TypeOf(defaults)

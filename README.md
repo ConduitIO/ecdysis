@@ -109,7 +109,7 @@ Ecdysis provides an automatic way to parse a configuration file, environment var
 
 The order of precedence for configuration values is:
 
-1. Default values
+1. Default values (slices and maps are not currently supported)
 2. Configuration file
 3. Environment variables
 4. Flags
