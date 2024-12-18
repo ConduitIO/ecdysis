@@ -35,7 +35,7 @@ var DefaultDecorators = []Decorator{
 	CommandWithAliasesDecorator{},
 	CommandWithFlagsDecorator{},
 
-	// CommandWithParsingConfigDecorator need to be after CommandWithFlagsDecorator to make sure the flags are parsed.
+	// CommandWithParsingConfigDecorator needs to be after CommandWithFlagsDecorator to make sure the flags are parsed.
 	CommandWithParsingConfigDecorator{},
 
 	CommandWithDocsDecorator{},
@@ -285,27 +285,26 @@ func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command
 
 		viper := viper.New()
 
-		// set default values
+		// Set default values
 		setDefaults(viper, usrCfg.DefaultCfg)
 
-		// Set environment variable handling
+		// Handle env variables
 		viper.SetEnvPrefix(usrCfg.EnvPrefix)
 		viper.AutomaticEnv()
 		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-		// Load configuration file
+		// Handle config file
 		viper.SetConfigFile(usrCfg.ConfigPath)
 		if err := viper.ReadInConfig(); err != nil {
 			return fmt.Errorf("fatal error config file: %w", err)
 		}
 
-		// Bind flags to Viper
+		// Handle flags
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
 			if err := viper.BindPFlag(f.Name, f); err != nil {
 				fmt.Printf("error binding flag: %v\n", err)
 			}
 		})
-		// Unmarshal the configuration into the ParsedCfg
 		if err := viper.Unmarshal(usrCfg.ParsedCfg); err != nil {
 			return fmt.Errorf("error unmarshalling config: %w", err)
 		}

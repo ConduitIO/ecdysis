@@ -47,28 +47,23 @@ func setDefaults(v *viper.Viper, defaults interface{}) {
 		field := val.Field(i)
 		fieldType := typ.Field(i)
 
-		// Use the long or short tag if available
 		fieldName := fieldType.Tag.Get("long")
 		if fieldName == "" {
 			fieldName = fieldType.Tag.Get("short")
 		}
 
-		// Skip fields without a long or short tag
 		if fieldName == "" {
 			continue
 		}
 
 		switch field.Kind() { //nolint:exhaustive // no need to handle all cases
 		case reflect.Struct:
-			// Recursively handle nested structs
 			setDefaults(v, field.Interface())
 		case reflect.Ptr:
-			// Handle pointer fields
 			if !field.IsNil() {
 				setDefaults(v, field.Interface())
 			}
 		default:
-			// Set the default value
 			if field.CanInterface() {
 				v.SetDefault(fieldName, field.Interface())
 			}
