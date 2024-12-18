@@ -299,12 +299,18 @@ func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command
 			return fmt.Errorf("fatal error config file: %w", err)
 		}
 
+		var errors []error
+
 		// Handle flags
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
 			if err := viper.BindPFlag(f.Name, f); err != nil {
-				fmt.Printf("error binding flag: %v\n", err)
+				errors = append(errors, err)
 			}
 		})
+		if len(errors) > 0 {
+			return fmt.Errorf("error binding flags: %w", errors)
+		}
+
 		if err := viper.Unmarshal(usrCfg.ParsedCfg); err != nil {
 			return fmt.Errorf("error unmarshalling config: %w", err)
 		}
