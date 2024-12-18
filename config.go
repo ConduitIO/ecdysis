@@ -16,6 +16,7 @@ package ecdysis
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
@@ -86,7 +87,10 @@ func parseConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	// Handle config file
 	v.SetConfigFile(cfg.Path)
 	if err := v.ReadInConfig(); err != nil {
-		return fmt.Errorf("fatal error config file: %w", err)
+		// we make the existence of the config file optional
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("fatal error config file: %w", err)
+		}
 	}
 
 	var errors []error
