@@ -278,14 +278,15 @@ func (CommandWithConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Com
 
 		cfg := v.Config()
 
+		parsedType := reflect.TypeOf(cfg.Parsed)
+
 		// Ensure Parsed is a pointer
-		if reflect.ValueOf(cfg.Parsed).Kind() != reflect.Ptr {
+		if parsedType.Kind() != reflect.Ptr {
 			return fmt.Errorf("parsed must be a pointer")
 		}
 
-		// Ensure both cfg.Parsed and cfg.DefaultValues are the same type
-		if reflect.TypeOf(cfg.Parsed) != reflect.TypeOf(cfg.DefaultValues) {
-			return fmt.Errorf("parsed and DefaultValues must be the same type")
+		if parsedType.Elem() != reflect.TypeOf(cfg.DefaultValues) {
+			return fmt.Errorf("parsed and defaultValues must be the same type")
 		}
 
 		viper := viper.New()
