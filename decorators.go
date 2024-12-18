@@ -283,6 +283,11 @@ func (CommandWithParsingConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command
 			return fmt.Errorf("ParsedCfg must be a pointer")
 		}
 
+		// Ensure both usrCfg.ParsedCfg and usrCfg.DefaultCfg are the same type
+		if reflect.TypeOf(usrCfg.ParsedCfg) != reflect.TypeOf(usrCfg.DefaultCfg) {
+			return fmt.Errorf("ParsedCfg and DefaultCfg must be the same type")
+		}
+
 		viper := viper.New()
 
 		// Set default values
