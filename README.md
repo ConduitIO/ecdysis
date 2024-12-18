@@ -114,6 +114,12 @@ The order of precedence for configuration values is:
 3. Environment variables
 4. Flags
 
+
+> [!IMPORTANT]  
+> For flags, it's important to set default values to ensure that the configuration will be correctly parsed. 
+> Otherwise, they will be empty, and it will be considered as if the user set that intentionally.
+> example: `flags.SetDefault("config.path", c.cfg.ConduitCfgPath)`
+
 ```go
 var (
     _ ecdysis.CommandWithConfiguration = (*RootCommand)(nil)
