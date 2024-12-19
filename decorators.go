@@ -621,6 +621,8 @@ type CommandWithExecute interface {
 // CommandWithExecuteDecorator is a decorator that sets the command execution.
 type CommandWithExecuteDecorator struct{}
 
+type CobraCtxCmd struct{}
+
 // Decorate sets the command execution.
 func (CommandWithExecuteDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithExecute)
@@ -636,7 +638,11 @@ func (CommandWithExecuteDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Co
 				return err
 			}
 		}
-		return v.Execute(cmd.Context())
+
+		// Provide the cobra command to the context.
+		// This is useful for situations such as wanting to execute cmd.Help() directly from Execute().
+		ctx := context.WithValue(cmd.Context(), CobraCtxCmd{}, cmd)
+		return v.Execute(ctx)
 	}
 
 	return nil
