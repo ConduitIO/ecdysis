@@ -110,7 +110,11 @@ type BehavioralTestCommand interface {
 
 func TestBuildCobraCommand_Behavioral(t *testing.T) {
 	ctx := context.Background()
+	cobraCmd := &cobra.Command{}
+	ctx = context.WithValue(ctx, CobraCtxCmd{}, cobraCmd)
+
 	ctrl := gomock.NewController(t)
+
 	cmd := NewMockBehavioralTestCommand(ctrl)
 
 	wantLogger := slog.New(slog.NewTextHandler(nil, nil))
@@ -124,7 +128,7 @@ func TestBuildCobraCommand_Behavioral(t *testing.T) {
 
 	// Set up the remaining expectations before executing the command.
 	call = cmd.EXPECT().Args(gomock.Any()).Return(nil).After(call)
-	cmd.EXPECT().Execute(ctx).Return(nil).After(call)
+	cmd.EXPECT().Execute(gomock.AssignableToTypeOf(ctx)).Return(nil).After(call)
 
 	err := got.ExecuteContext(ctx)
 	if err != nil {
