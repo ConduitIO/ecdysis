@@ -110,12 +110,9 @@ type BehavioralTestCommand interface {
 
 func TestBuildCobraCommand_Behavioral(t *testing.T) {
 	ctx := context.Background()
-	cobraCmd := &cobra.Command{}
-	ctx = context.WithValue(ctx, CobraCtxCmd{}, cobraCmd)
-
 	ctrl := gomock.NewController(t)
-
 	cmd := NewMockBehavioralTestCommand(ctrl)
+	ctx = context.WithValue(ctx, CobraCtxCmd{}, cmd)
 
 	wantLogger := slog.New(slog.NewTextHandler(nil, nil))
 	ecdysis := New(WithDecorators(CommandWithLoggerDecorator{Logger: wantLogger}))
