@@ -103,7 +103,7 @@ func main() {
 }
 ```
 
-### Configuration
+### CommandWithConfig
 
 Ecdysis provides an automatic way to parse a configuration file, environment variables, and flags using the [`viper`](https://github.com/spf13/viper) library. To use it, you need to implement the `CommandWithConfig` interface.
 
@@ -122,7 +122,9 @@ The order of precedence for configuration values is:
 
 ```go
 var (
-    _ ecdysis.CommandWithConfiguration = (*RootCommand)(nil)
+    _ ecdysis.CommandWithFlags   = (*RootCommand)(nil)
+    _ ecdysis.CommandWithExecute = (*RootCommand)(nil)
+    _ ecdysis.CommandWithConfig  = (*RootCommand)(nil)
 )
 
 type ConduitConfig struct {
@@ -144,12 +146,12 @@ type RootCommand struct {
     cfg   ConduitConfig
 }
 
-func (c *RootCommand) ParseConfig() ecdysis.Config {
+func (c *RootCommand) Config() ecdysis.Config {
     return ecdysis.Config{
-        EnvPrefix:  "CONDUIT", // prefix for environment variables
-        ParsedCfg:  &c.cfg, // where configuration will be parsed
-        ConfigPath: c.flags.ConduitCfgPath, // where to read the configuration file
-        DefaultCfg: c.cfg, // where to extract default values from
+        EnvPrefix:     "CONDUIT",
+        Parsed:        &c.Cfg,
+        Path:          c.flags.ConduitCfgPath,
+        DefaultValues: conduit.DefaultConfigWithBasePath(path),
     }
 }
 
@@ -167,7 +169,21 @@ func (c *RootCommand) Flags() []ecdysis.Flag {
 	
     return flags
 }
-````
+```
+
+### Fetching `cobra.Command` from `CommandWithExecute`
+
+If you need to access the `cobra.Command` instance from a `CommandWithExecute` implementation, you can utilize
+the `ecdysis.CobraCmdFromContext` function to fetch it from the context:
+
+```go
+func (c *RootCommand) Execute(ctx context.Context) error {
+    if cmd := ecdysis.CobraCmdFromContext(ctx); cmd != nil {
+        return cmd.Help()
+    }
+    return nil
+}
+```
 
 ## Flags
 

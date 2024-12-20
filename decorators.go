@@ -636,7 +636,9 @@ func (CommandWithExecuteDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Co
 				return err
 			}
 		}
-		return v.Execute(cmd.Context())
+
+		ctx := contextWithCobraCommand(cmd.Context(), cmd)
+		return v.Execute(ctx)
 	}
 
 	return nil

@@ -112,6 +112,7 @@ func TestBuildCobraCommand_Behavioral(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	cmd := NewMockBehavioralTestCommand(ctrl)
+	ctx = context.WithValue(ctx, cobraCmdCtxKey{}, cmd)
 
 	wantLogger := slog.New(slog.NewTextHandler(nil, nil))
 	ecdysis := New(WithDecorators(CommandWithLoggerDecorator{Logger: wantLogger}))
@@ -124,7 +125,7 @@ func TestBuildCobraCommand_Behavioral(t *testing.T) {
 
 	// Set up the remaining expectations before executing the command.
 	call = cmd.EXPECT().Args(gomock.Any()).Return(nil).After(call)
-	cmd.EXPECT().Execute(ctx).Return(nil).After(call)
+	cmd.EXPECT().Execute(gomock.AssignableToTypeOf(ctx)).Return(nil).After(call)
 
 	err := got.ExecuteContext(ctx)
 	if err != nil {
