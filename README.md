@@ -169,9 +169,9 @@ func (c *RootCommand) Flags() []ecdysis.Flag {
 	
     return flags
 }
-````
+```
 
-### Fetching cobra.Command from CommandWithExecute
+### Fetching `cobra.Command` from `CommandWithExecute`
 
 If you need to access the `cobra.Command` instance from a `CommandWithExecute` implementation, you can utilize
 the `ecdysis.CobraCmdFromContext` function to fetch it from the context:
@@ -184,9 +184,6 @@ func (c *RootCommand) Execute(ctx context.Context) error {
     return nil
 }
 ```
-
-```go
-
 
 ## Flags
 
