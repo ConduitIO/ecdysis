@@ -32,7 +32,7 @@ func contextWithCobraCommand(ctx context.Context, cmd *cobra.Command) context.Co
 // context does not contain a cobra command, it returns nil.
 func CobraCmdFromContext(ctx context.Context) *cobra.Command {
 	if cobraCmd := ctx.Value(cobraCmdCtxKey{}); cobraCmd != nil {
-		return cobraCmd.(*cobra.Command)
+		return cobraCmd.(*cobra.Command) //nolint:forcetypeassert // only this package can set the value, it has to be a *cobra.Command
 	}
 	return nil
 }
