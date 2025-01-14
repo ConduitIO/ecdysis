@@ -15,6 +15,7 @@
 package ecdysis
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -93,21 +94,17 @@ func parseConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 		}
 	}
 
-	var errors []error
+	var errs []error
 
 	// Handle flags
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if err := v.BindPFlag(f.Name, f); err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 	})
 
-	if len(errors) > 0 {
-		var errStrs []string
-		for _, err := range errors {
-			errStrs = append(errStrs, err.Error())
-		}
-		return fmt.Errorf("error binding flags: %s", strings.Join(errStrs, "; "))
+	if err := errors.Join(errs...); err != nil {
+		return fmt.Errorf("error binding flags: %w", err)
 	}
 	return nil
 }
