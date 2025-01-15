@@ -21,13 +21,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 var DefaultDecorators = []Decorator{
@@ -277,30 +275,7 @@ func (CommandWithConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Com
 		}
 
 		cfg := v.Config()
-
-		parsedType := reflect.TypeOf(cfg.Parsed)
-
-		// Ensure Parsed is a pointer
-		if parsedType.Kind() != reflect.Ptr {
-			return fmt.Errorf("parsed must be a pointer")
-		}
-
-		if parsedType.Elem() != reflect.TypeOf(cfg.DefaultValues) {
-			return fmt.Errorf("parsed and defaultValues must be the same type")
-		}
-
-		viper := viper.New()
-
-		setDefaults(viper, cfg.DefaultValues)
-
-		if err := parseConfig(viper, cfg, cmd); err != nil {
-			return fmt.Errorf("error parsing config: %w", err)
-		}
-
-		if err := viper.Unmarshal(cfg.Parsed); err != nil {
-			return fmt.Errorf("error unmarshalling config: %w", err)
-		}
-		return nil
+		return ParseConfig(cfg, cmd)
 	}
 	return nil
 }
@@ -637,7 +612,7 @@ func (CommandWithExecuteDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Co
 			}
 		}
 
-		ctx := contextWithCobraCommand(cmd.Context(), cmd)
+		ctx := ContextWithCobraCommand(cmd.Context(), cmd)
 		return v.Execute(ctx)
 	}
 

@@ -22,9 +22,9 @@ import (
 
 type cobraCmdCtxKey struct{}
 
-// contextWithCobraCommand provides the cobra command to the context.
+// ContextWithCobraCommand provides the cobra command to the context.
 // This is useful for situations such as wanting to execute cmd.Help() directly from Execute().
-func contextWithCobraCommand(ctx context.Context, cmd *cobra.Command) context.Context {
+func ContextWithCobraCommand(ctx context.Context, cmd *cobra.Command) context.Context {
 	return context.WithValue(ctx, cobraCmdCtxKey{}, cmd)
 }
 

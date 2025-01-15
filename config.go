@@ -15,6 +15,7 @@
 package ecdysis
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -77,8 +78,8 @@ func setDefaults(v *viper.Viper, defaults interface{}) {
 	}
 }
 
-// parseConfig parses the configuration (from cfg and cmd) into the viper instance.
-func parseConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
+// bindViperConfig parses the configuration (from cfg and cmd) into the viper instance.
+func bindViperConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	// Handle env variables
 	v.SetEnvPrefix(cfg.EnvPrefix)
 	v.AutomaticEnv()
@@ -93,21 +94,46 @@ func parseConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 		}
 	}
 
-	var errors []error
+	var errs []error
 
 	// Handle flags
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if err := v.BindPFlag(f.Name, f); err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 	})
 
-	if len(errors) > 0 {
-		var errStrs []string
-		for _, err := range errors {
-			errStrs = append(errStrs, err.Error())
-		}
-		return fmt.Errorf("error binding flags: %s", strings.Join(errStrs, "; "))
+	if err := errors.Join(errs...); err != nil {
+		return fmt.Errorf("error binding flags: %w", err)
 	}
+	return nil
+}
+
+// ParseConfig parses the configuration into cfg.Parsed using viper.
+// This is useful for any decorator that needs to parse configuration based on the available flags.
+func ParseConfig(cfg Config, cmd *cobra.Command) error {
+	parsedType := reflect.TypeOf(cfg.Parsed)
+
+	// Ensure Parsed is a pointer
+	if parsedType.Kind() != reflect.Ptr {
+		return fmt.Errorf("parsed must be a pointer")
+	}
+
+	if parsedType.Elem() != reflect.TypeOf(cfg.DefaultValues) {
+		return fmt.Errorf("parsed and defaultValues must be the same type")
+	}
+
+	viper := viper.New()
+
+	setDefaults(viper, cfg.DefaultValues)
+
+	if err := bindViperConfig(viper, cfg, cmd); err != nil {
+		return fmt.Errorf("error parsing config: %w", err)
+	}
+
+	if err := viper.Unmarshal(cfg.Parsed); err != nil {
+		return fmt.Errorf("error unmarshalling config: %w", err)
+	}
+
 	return nil
 }
