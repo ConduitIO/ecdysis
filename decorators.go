@@ -637,7 +637,7 @@ func (CommandWithExecuteDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Co
 			}
 		}
 
-		ctx := contextWithCobraCommand(cmd.Context(), cmd)
+		ctx := ContextWithCobraCommand(cmd.Context(), cmd)
 		return v.Execute(ctx)
 	}
 
