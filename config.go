@@ -78,8 +78,8 @@ func setDefaults(v *viper.Viper, defaults interface{}) {
 	}
 }
 
-// parseConfig parses the configuration (from cfg and cmd) into the viper instance.
-func parseConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
+// ParseConfig parses the configuration (from cfg and cmd) into the viper instance.
+func ParseConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	// Handle env variables
 	v.SetEnvPrefix(cfg.EnvPrefix)
 	v.AutomaticEnv()

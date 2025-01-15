@@ -293,7 +293,7 @@ func (CommandWithConfigDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Com
 
 		setDefaults(viper, cfg.DefaultValues)
 
-		if err := parseConfig(viper, cfg, cmd); err != nil {
+		if err := ParseConfig(viper, cfg, cmd); err != nil {
 			return fmt.Errorf("error parsing config: %w", err)
 		}
 
