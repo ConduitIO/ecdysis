@@ -85,7 +85,7 @@ func (d CommandWithLoggerDecorator) Decorate(_ *Ecdysis, _ *cobra.Command, c Com
 
 // -- OUTPUT -------------------------------------------------------------------
 
-// CommandWithOutput can be implemented by a command .
+// CommandWithOutput can be implemented by a command to provide its own stdout and stderr.
 type CommandWithOutput interface {
 	Command
 	Output(output Output)
