@@ -17,7 +17,8 @@ package ecdysis
 import (
 	"fmt"
 	"io"
-	"os"
+
+	"github.com/spf13/cobra"
 )
 
 type Output interface {
@@ -30,10 +31,10 @@ type DefaultOutput struct {
 	stderr io.Writer
 }
 
-func NewDefaultOutput() *DefaultOutput {
+func NewDefaultOutput(cmd *cobra.Command) *DefaultOutput {
 	return &DefaultOutput{
-		stdout: os.Stdout,
-		stderr: os.Stderr,
+		stdout: cmd.OutOrStdout(),
+		stderr: cmd.OutOrStderr(),
 	}
 }
 

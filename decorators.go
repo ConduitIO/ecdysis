@@ -98,14 +98,14 @@ type CommandWithOutputDecorator struct {
 }
 
 // Decorate provides the logger to the command.
-func (d CommandWithOutputDecorator) Decorate(_ *Ecdysis, _ *cobra.Command, c Command) error {
+func (d CommandWithOutputDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithOutput)
 	if !ok {
 		return nil
 	}
 
 	if d.Output == nil {
-		v.Output(NewDefaultOutput())
+		v.Output(NewDefaultOutput(cmd))
 	} else {
 		v.Output(d.Output)
 	}
