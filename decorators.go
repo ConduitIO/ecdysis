@@ -83,31 +83,31 @@ func (d CommandWithLoggerDecorator) Decorate(_ *Ecdysis, _ *cobra.Command, c Com
 	return nil
 }
 
-// -- STDOUT -------------------------------------------------------------------
+// -- OUTPUT -------------------------------------------------------------------
 
 // CommandWithOutput can be implemented by a command .
 type CommandWithOutput interface {
 	Command
-	SetDisplay(display Display)
+	Output(output Output)
 }
 
 // CommandWithOutputDecorator is a decorator that provides a Stdout to the command.
 // If the Stdout field is not set, the default stdout will be provided.
 type CommandWithOutputDecorator struct {
-	Display Display
+	Output Output
 }
 
 // Decorate provides the logger to the command.
-func (d CommandWithOutputDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
+func (d CommandWithOutputDecorator) Decorate(_ *Ecdysis, _ *cobra.Command, c Command) error {
 	v, ok := c.(CommandWithOutput)
 	if !ok {
 		return nil
 	}
 
-	if d.Display == nil {
-		v.SetDisplay(NewDefaultDisplay())
+	if d.Output == nil {
+		v.Output(NewDefaultOutput())
 	} else {
-		v.SetDisplay(d.Display)
+		v.Output(d.Output)
 	}
 
 	return nil

@@ -6,35 +6,35 @@ import (
 	"os"
 )
 
-type Display interface {
+type Output interface {
 	Stdout(string)
 	Stderr(string)
 }
 
-type DefaultDisplay struct {
+type DefaultOutput struct {
 	stdout io.Writer
 	stderr io.Writer
 }
 
-func NewDefaultDisplay() *DefaultDisplay {
-	return &DefaultDisplay{
+func NewDefaultOutput() *DefaultOutput {
+	return &DefaultOutput{
 		stdout: os.Stdout,
 		stderr: os.Stderr,
 	}
 }
 
 // Stdout writes a message to the configured standard output.
-func (d *DefaultDisplay) Stdout(msg string) {
+func (d *DefaultOutput) Stdout(msg string) {
 	fmt.Fprint(d.stdout, msg)
 }
 
 // Stderr writes a message to the configured standard error.
-func (d *DefaultDisplay) Stderr(msg string) {
+func (d *DefaultOutput) Stderr(msg string) {
 	fmt.Fprint(d.stderr, msg)
 }
 
 // SetOutput allows overwriting the stdout and/or stderr for specific use cases (like testing).
-func (d *DefaultDisplay) SetOutput(stdout, stderr io.Writer) {
+func (d *DefaultOutput) SetOutput(stdout, stderr io.Writer) {
 	if stdout != nil {
 		d.stdout = stdout
 	}
