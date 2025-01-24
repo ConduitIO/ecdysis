@@ -21,8 +21,8 @@ import (
 )
 
 type Output interface {
-	Stdout(string)
-	Stderr(string)
+	Stdout(any)
+	Stderr(any)
 }
 
 type DefaultOutput struct {
@@ -38,17 +38,17 @@ func NewDefaultOutput() *DefaultOutput {
 }
 
 // Stdout writes a message to the configured standard output.
-func (d *DefaultOutput) Stdout(msg string) {
+func (d *DefaultOutput) Stdout(msg any) {
 	fmt.Fprint(d.stdout, msg)
 }
 
 // Stderr writes a message to the configured standard error.
-func (d *DefaultOutput) Stderr(msg string) {
+func (d *DefaultOutput) Stderr(msg any) {
 	fmt.Fprint(d.stderr, msg)
 }
 
-// SetOutput allows overwriting the stdout and/or stderr for specific use cases (like testing).
-func (d *DefaultOutput) SetOutput(stdout, stderr io.Writer) {
+// Output allows overwriting the stdout and/or stderr for specific use cases (like testing).
+func (d *DefaultOutput) Output(stdout, stderr io.Writer) {
 	if stdout != nil {
 		d.stdout = stdout
 	}
