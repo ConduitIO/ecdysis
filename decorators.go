@@ -30,6 +30,8 @@ import (
 
 var DefaultDecorators = []Decorator{
 	CommandWithLoggerDecorator{},
+	CommandWithOutputDecorator{},
+
 	CommandWithAliasesDecorator{},
 	CommandWithFlagsDecorator{},
 
@@ -76,6 +78,36 @@ func (d CommandWithLoggerDecorator) Decorate(_ *Ecdysis, _ *cobra.Command, c Com
 		v.Logger(slog.Default())
 	} else {
 		v.Logger(d.Logger)
+	}
+
+	return nil
+}
+
+// -- OUTPUT -------------------------------------------------------------------
+
+// CommandWithOutput can be implemented by a command to provide its own stdout and stderr.
+type CommandWithOutput interface {
+	Command
+	Output(output Output)
+}
+
+// CommandWithOutputDecorator is a decorator that provides a Stdout to the command.
+// If the Stdout field is not set, the default stdout will be provided.
+type CommandWithOutputDecorator struct {
+	Output Output
+}
+
+// Decorate provides the logger to the command.
+func (d CommandWithOutputDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
+	v, ok := c.(CommandWithOutput)
+	if !ok {
+		return nil
+	}
+
+	if d.Output == nil {
+		v.Output(NewDefaultOutput(cmd))
+	} else {
+		v.Output(d.Output)
 	}
 
 	return nil
