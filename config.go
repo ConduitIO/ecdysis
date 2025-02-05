@@ -85,8 +85,10 @@ func bindViperConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// Handle config file
 	v.SetConfigFile(cfg.Path)
+	v.SetConfigType("yaml")
+
+	// Handle config file
 	if err := v.ReadInConfig(); err != nil {
 		// we make the existence of the config file optional
 		if !os.IsNotExist(err) {
