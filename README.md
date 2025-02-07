@@ -19,7 +19,7 @@ go get github.com/conduitio/ecdysis
 ```
 
 To create a new command, define a struct that implements `ecdysis.Command` and
-any other `ecdysis.CommandWih*` interfaces you need. The recommended pattern is
+any other `ecdysis.CommandWith*` interfaces you need. The recommended pattern is
 to list the interfaces that the command implements in a `var` block.
 
 ```go
