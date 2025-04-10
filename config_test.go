@@ -16,12 +16,13 @@ package ecdysis
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/matryer/is"
 )
+
+var testConfigPath = "./test_parse_config_cooking_config.yaml"
 
 type cookingConfig struct {
 	HeatLevel int `long:"heat-level" usage:"sets the heat level" default:"5" mapstructure:"heat-level"`
@@ -37,8 +38,6 @@ type cookCommand struct {
 }
 
 func (c *cookCommand) Execute(ctx context.Context) error {
-	fmt.Println("Cooking at heat level", c.Cfg.HeatLevel)
-
 	return nil
 }
 
@@ -49,7 +48,7 @@ func (c *cookCommand) Config() Config {
 		DefaultValues: cookingConfig{
 			HeatLevel: 5,
 		},
-		Path: "./test_parse_config_cooking_config.yaml",
+		Path: testConfigPath,
 	}
 }
 
@@ -73,10 +72,20 @@ func (c *cookCommand) Docs() Docs {
 	}
 }
 
-func TestParseConfig(t *testing.T) {
+func TestParseConfig_NameWithDash_EnvVar(t *testing.T) {
 	is := is.New(t)
 
-	// t.Setenv("TESTPARSECONFIG_COOKINGCONFIG_HEAT_LEVEL", "33")
+	t.Setenv("TESTPARSECONFIG_COOKINGCONFIG_HEAT_LEVEL", "33")
+
+	cookCmd := &cookCommand{}
+	cookCobraCmd := New().MustBuildCobraCommand(cookCmd)
+	is.NoErr(cookCobraCmd.Execute())
+	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: 33})
+}
+
+func TestParseConfig_NameWithDash_Flag(t *testing.T) {
+	is := is.New(t)
+
 	originalArgs := os.Args
 	os.Args = []string{originalArgs[0], "--heat-level=22"}
 	defer func() {
@@ -86,5 +95,28 @@ func TestParseConfig(t *testing.T) {
 	cookCmd := &cookCommand{}
 	cookCobraCmd := New().MustBuildCobraCommand(cookCmd)
 	is.NoErr(cookCobraCmd.Execute())
-	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: 33})
+	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: 22})
+}
+
+func TestParseConfig_NameWithDash_File(t *testing.T) {
+	is := is.New(t)
+
+	cookCmd := &cookCommand{}
+	cookCobraCmd := New().MustBuildCobraCommand(cookCmd)
+	is.NoErr(cookCobraCmd.Execute())
+	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: 11})
+}
+
+func TestParseConfig_NameWithDash_Default(t *testing.T) {
+	is := is.New(t)
+	cfgFile, err := os.CreateTemp("", "test_parse_config_cooking_config_empty.yaml")
+	is.NoErr(err)
+	defer os.Remove(cfgFile.Name())
+
+	testConfigPath = cfgFile.Name()
+
+	cookCmd := &cookCommand{}
+	cookCobraCmd := New().MustBuildCobraCommand(cookCmd)
+	is.NoErr(cookCobraCmd.Execute())
+	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: 5})
 }
