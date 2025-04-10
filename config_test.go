@@ -33,11 +33,10 @@ func newCookingConfig() cookingConfig {
 }
 
 type cookCommand struct {
-	flags cookingConfig
-	Cfg   cookingConfig
+	Cfg cookingConfig
 }
 
-func (c *cookCommand) Execute(ctx context.Context) error {
+func (c *cookCommand) Execute(context.Context) error {
 	return nil
 }
 
