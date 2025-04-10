@@ -83,7 +83,7 @@ func bindViperConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	// Handle env variables
 	v.SetEnvPrefix(cfg.EnvPrefix)
 	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
 	v.SetConfigFile(cfg.Path)
 	v.SetConfigType("yaml")
