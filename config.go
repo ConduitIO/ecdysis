@@ -85,6 +85,11 @@ func bindViperConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
+	// Reads from that configuration if it's specified via environment variable
+	if os.Getenv("CONDUIT_CONFIG_PATH") != "" {
+		cfg.Path = os.Getenv("CONDUIT_CONFIG_PATH")
+	}
+
 	v.SetConfigFile(cfg.Path)
 	v.SetConfigType("yaml")
 
