@@ -85,9 +85,12 @@ func bindViperConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
+	// cfg.EnvPrefix will contain the desired prefix for the environment variables.
+	configPathEnvVar := fmt.Sprintf("%s_CONFIG_PATH", cfg.EnvPrefix)
+
 	// Reads from that configuration if it's specified via environment variable
-	if os.Getenv("CONDUIT_CONFIG_PATH") != "" {
-		cfg.Path = os.Getenv("CONDUIT_CONFIG_PATH")
+	if os.Getenv(configPathEnvVar) != "" {
+		cfg.Path = os.Getenv(configPathEnvVar)
 	}
 
 	v.SetConfigFile(cfg.Path)

@@ -121,6 +121,18 @@ func TestParseConfig_NameWithDash_Default(t *testing.T) {
 	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: 5})
 }
 
+// customCookCommand is a command that uses a custom environment prefix for testing
+type customCookCommand struct {
+	cookCommand
+}
+
+// Config returns a configuration with a custom environment prefix
+func (c *customCookCommand) Config() Config {
+	cfg := c.cookCommand.Config()
+	cfg.EnvPrefix = "MY_ENV"
+	return cfg
+}
+
 func TestParseConfig_CustomConfigPath(t *testing.T) {
 	is := is.New(t)
 
@@ -136,12 +148,12 @@ func TestParseConfig_CustomConfigPath(t *testing.T) {
 	err = customConfigFile.Close()
 	is.NoErr(err)
 
-	// Set CONDUIT_CONFIG_PATH environment variable to the temporary file path
-	t.Setenv("CONDUIT_CONFIG_PATH", customConfigFile.Name())
+	// Set MY_ENV_CONFIG_PATH environment variable to the temporary file path
+	t.Setenv("MY_ENV_CONFIG_PATH", customConfigFile.Name())
 
 	// Execute the command and verify the config was loaded from the custom path
-	cookCmd := &cookCommand{}
-	cookCobraCmd := New().MustBuildCobraCommand(cookCmd)
+	customCmd := &customCookCommand{}
+	cookCobraCmd := New().MustBuildCobraCommand(customCmd)
 	is.NoErr(cookCobraCmd.Execute())
-	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: customHeatLevel})
+	is.Equal(customCmd.Cfg, cookingConfig{HeatLevel: customHeatLevel})
 }
