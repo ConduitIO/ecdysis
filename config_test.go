@@ -121,12 +121,12 @@ func TestParseConfig_NameWithDash_Default(t *testing.T) {
 	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: 5})
 }
 
-// customCookCommand is a command that uses a custom environment prefix for testing
+// customCookCommand is a command that uses a custom environment prefix for testing.
 type customCookCommand struct {
 	cookCommand
 }
 
-// Config returns a configuration with a custom environment prefix
+// Config returns a configuration with a custom environment prefix.
 func (c *customCookCommand) Config() Config {
 	cfg := c.cookCommand.Config()
 	cfg.EnvPrefix = "MY_ENV"
@@ -143,7 +143,7 @@ func TestParseConfig_CustomConfigPath(t *testing.T) {
 
 	// Write custom config to the temporary file
 	customHeatLevel := 42
-	_, err = customConfigFile.WriteString(fmt.Sprintf("heat-level: %d\n", customHeatLevel))
+	_, err = fmt.Fprintf(customConfigFile, "heat-level: %d\n", customHeatLevel)
 	is.NoErr(err)
 	err = customConfigFile.Close()
 	is.NoErr(err)

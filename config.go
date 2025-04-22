@@ -88,7 +88,7 @@ func bindViperConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	// cfg.EnvPrefix will contain the desired prefix for the environment variables.
 	configPathEnvVar := fmt.Sprintf("%s_CONFIG_PATH", cfg.EnvPrefix)
 
-	// Reads from that configuration if it's specified via environment variable
+	// Reads from that configuration if it's specified via environment variable.
 	if os.Getenv(configPathEnvVar) != "" {
 		cfg.Path = os.Getenv(configPathEnvVar)
 	}
