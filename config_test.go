@@ -16,6 +16,7 @@ package ecdysis
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -118,4 +119,41 @@ func TestParseConfig_NameWithDash_Default(t *testing.T) {
 	cookCobraCmd := New().MustBuildCobraCommand(cookCmd)
 	is.NoErr(cookCobraCmd.Execute())
 	is.Equal(cookCmd.Cfg, cookingConfig{HeatLevel: 5})
+}
+
+// customCookCommand is a command that uses a custom environment prefix for testing.
+type customCookCommand struct {
+	cookCommand
+}
+
+// Config returns a configuration with a custom environment prefix.
+func (c *customCookCommand) Config() Config {
+	cfg := c.cookCommand.Config()
+	cfg.EnvPrefix = "MY_ENV"
+	return cfg
+}
+
+func TestParseConfig_CustomConfigPath(t *testing.T) {
+	is := is.New(t)
+
+	// Create a temporary config file with a unique heat-level value
+	customConfigFile, err := os.CreateTemp("", "test_custom_config_*.yaml")
+	is.NoErr(err)
+	defer os.Remove(customConfigFile.Name())
+
+	// Write custom config to the temporary file
+	customHeatLevel := 42
+	_, err = fmt.Fprintf(customConfigFile, "heat-level: %d\n", customHeatLevel)
+	is.NoErr(err)
+	err = customConfigFile.Close()
+	is.NoErr(err)
+
+	// Set MY_ENV_CONFIG_PATH environment variable to the temporary file path
+	t.Setenv("MY_ENV_CONFIG_PATH", customConfigFile.Name())
+
+	// Execute the command and verify the config was loaded from the custom path
+	customCmd := &customCookCommand{}
+	cookCobraCmd := New().MustBuildCobraCommand(customCmd)
+	is.NoErr(cookCobraCmd.Execute())
+	is.Equal(customCmd.Cfg, cookingConfig{HeatLevel: customHeatLevel})
 }
