@@ -17,6 +17,7 @@ package ecdysis
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -50,6 +51,7 @@ var DefaultDecorators = []Decorator{
 	CommandWithPromptDecorator{},
 
 	CommandWithExecuteDecorator{},
+	CommandWithResultDecorator{},
 }
 
 // -- LOGGER -------------------------------------------------------------------
@@ -646,6 +648,68 @@ func (CommandWithExecuteDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Co
 
 		ctx := ContextWithCobraCommand(cmd.Context(), cmd)
 		return v.Execute(ctx)
+	}
+
+	return nil
+}
+
+// CommandWithResult can be implemented by a command whose execution produces a
+// result value. It is an alternative to CommandWithExecute: the framework renders
+// the result as JSON when the --json flag is set, and otherwise via Render. This
+// gives every such command uniform, structured --json output for free — a single
+// place to add the flag rather than per-command plumbing.
+//
+// A command implements either CommandWithExecute or CommandWithResult, not both.
+type CommandWithResult interface {
+	Command
+	// ExecuteResult runs the command and returns its result. It must not write the
+	// result to output itself — the framework does the rendering.
+	ExecuteResult(ctx context.Context) (any, error)
+	// Render returns the human-readable rendering of a result from ExecuteResult.
+	// It is not called when --json is set.
+	Render(result any) string
+}
+
+// CommandWithResultDecorator registers a --json flag and renders the command's
+// result as JSON (when set) or via Render (otherwise).
+type CommandWithResultDecorator struct{}
+
+// Decorate wires the result-rendering execution and the --json flag.
+func (CommandWithResultDecorator) Decorate(_ *Ecdysis, cmd *cobra.Command, c Command) error {
+	v, ok := c.(CommandWithResult)
+	if !ok {
+		return nil
+	}
+
+	if cmd.Flags().Lookup("json") == nil {
+		cmd.Flags().Bool("json", false, "output the result as JSON")
+	}
+
+	old := cmd.RunE
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if old != nil {
+			if err := old(cmd, args); err != nil {
+				return err
+			}
+		}
+
+		ctx := ContextWithCobraCommand(cmd.Context(), cmd)
+		result, err := v.ExecuteResult(ctx)
+		if err != nil {
+			return err //nolint:wrapcheck // the command's error is user-facing, mirroring CommandWithExecuteDecorator
+		}
+
+		if asJSON, _ := cmd.Flags().GetBool("json"); asJSON {
+			b, err := json.MarshalIndent(result, "", "  ")
+			if err != nil {
+				return fmt.Errorf("marshal result to JSON: %w", err)
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(b))
+			return nil
+		}
+
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), v.Render(result))
+		return nil
 	}
 
 	return nil
