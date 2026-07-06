@@ -31,6 +31,13 @@ type Config struct {
 	Parsed        any
 	DefaultValues any
 	Path          string
+	// ExcludedFlags lists flag names that must NOT be bound to the viper config.
+	// Use it for flags whose name would collide with a nested config struct key
+	// (e.g. a `--pipelines` alias when the config has a `pipelines.*` struct):
+	// viper would otherwise try to unmarshal a scalar flag into a struct field and
+	// fail. Such a flag is still parsed by cobra; read its value directly (e.g. in
+	// the command's Execute) rather than from the parsed config.
+	ExcludedFlags []string
 }
 
 // setDefaults sets the default values for the configuration. slices and maps are not supported.
@@ -107,7 +114,15 @@ func bindViperConfig(v *viper.Viper, cfg Config, cmd *cobra.Command) error {
 	var errs []error
 
 	// Handle flags
+	excluded := make(map[string]struct{}, len(cfg.ExcludedFlags))
+	for _, name := range cfg.ExcludedFlags {
+		excluded[name] = struct{}{}
+	}
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if _, skip := excluded[f.Name]; skip {
+			// Not bound to viper (see Config.ExcludedFlags); cobra still parses it.
+			return
+		}
 		if err := v.BindPFlag(f.Name, f); err != nil {
 			errs = append(errs, err)
 		}
