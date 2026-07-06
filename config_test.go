@@ -72,6 +72,60 @@ func (c *cookCommand) Docs() Docs {
 	}
 }
 
+// nestedConfig mirrors the shape that triggers the collision: a scalar flag whose
+// name equals a nested-struct config key (here, `pipelines` vs the `Pipelines`
+// struct with `pipelines.*` keys).
+type nestedConfig struct {
+	Pipelines struct {
+		Path string `long:"pipelines.path" usage:"pipelines path" default:"" mapstructure:"path"`
+	} `mapstructure:"pipelines"`
+}
+
+type nestedCommand struct {
+	Cfg           nestedConfig
+	pipelines     string // value of the excluded --pipelines alias flag
+	excludedFlags []string
+}
+
+func (c *nestedCommand) Execute(context.Context) error { return nil }
+func (c *nestedCommand) Usage() string                 { return "nested" }
+
+func (c *nestedCommand) Config() Config {
+	return Config{
+		EnvPrefix:     "TestExcludedFlags",
+		Parsed:        &c.Cfg,
+		DefaultValues: nestedConfig{},
+		Path:          "./does-not-exist.yaml",
+		ExcludedFlags: c.excludedFlags,
+	}
+}
+
+func (c *nestedCommand) Flags() []Flag {
+	flags := BuildFlags(&c.Cfg)
+	// --pipelines is a scalar flag whose name collides with the Pipelines struct.
+	flags = append(flags, Flag{Long: "pipelines", Ptr: &c.pipelines, Usage: "alias for pipelines.path"})
+	return flags
+}
+
+func TestParseConfig_ExcludedFlags(t *testing.T) {
+	is := is.New(t)
+
+	// Without exclusion: binding the scalar `pipelines` flag into the Pipelines
+	// struct fails.
+	notExcluded := &nestedCommand{}
+	cmd := New().MustBuildCobraCommand(notExcluded)
+	cmd.SetArgs([]string{"--pipelines=/foo"})
+	is.True(cmd.Execute() != nil) // struct-key collision
+
+	// With exclusion: no collision, and the flag is still parsed by cobra.
+	excluded := &nestedCommand{excludedFlags: []string{"pipelines"}}
+	cmd = New().MustBuildCobraCommand(excluded)
+	cmd.SetArgs([]string{"--pipelines=/foo"})
+	is.NoErr(cmd.Execute())
+	is.Equal(excluded.pipelines, "/foo")      // cobra parsed it
+	is.Equal(excluded.Cfg.Pipelines.Path, "") // not bound into the config struct
+}
+
 func TestParseConfig_NameWithDash_EnvVar(t *testing.T) {
 	is := is.New(t)
 
